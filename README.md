@@ -79,7 +79,7 @@ ports with 2xSSM on each Site and 2 different failover scenarios.
 
 2)  Choose which Sile will be active -- Site 1
 
-![](./media/image6.png){width="6.5in" height="3.55625in"}
+![](./media/image6.png)
 
 3)  In the Calculator window set the correct amount of each component
     for each site
