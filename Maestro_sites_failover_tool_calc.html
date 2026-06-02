@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maestro Sites Failover Calc Tool</title>
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --line:#d7deea;
+    --text:#163047;
+    --muted:#5f7288;
+    --blue:#1f6feb;
+    --blue2:#eaf2ff;
+    --green:#117a37;
+    --greenbg:#eaf8ee;
+    --red:#b42318;
+    --redbg:#fef3f2;
+    --yellow:#fff7d6;
+    --gray:#eef2f7;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    color:var(--text);
+    background:var(--bg);
+  }
+  .wrap{
+    max-width:1400px;
+    margin:0 auto;
+    padding:24px;
+  }
+  h1{margin:0 0 8px;font-size:30px}
+  h2{margin:0 0 14px;font-size:22px}
+  h3{margin:0 0 10px;font-size:16px}
+  p, li{line-height:1.45}
+  .muted{color:var(--muted)}
+  .grid{
+    display:grid;
+    gap:18px;
+  }
+  .grid-2{grid-template-columns:1.15fr 1fr}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+    box-shadow:0 4px 14px rgba(13,32,64,.04);
+  }
+  .controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:end;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:160px;
+  }
+  label{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+  }
+  input[type="text"], input[type="number"], select, textarea{
+    width:100%;
+    min-height:38px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:#fff;
+    color:var(--text);
+    font:inherit;
+  }
+  .input-highlight{
+    background:var(--yellow);
+  }
+  button{
+    border:0;
+    border-radius:10px;
+    padding:10px 14px;
+    font-weight:600;
+    background:var(--blue);
+    color:#fff;
+    cursor:pointer;
+  }
+  button.secondary{background:#526579}
+  button.light{background:#edf3ff;color:var(--blue)}
+  button.danger{background:#c23d3d}
+  button.ghost{
+    background:#fff;
+    color:var(--text);
+    border:1px solid var(--line);
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  th, td{
+    padding:9px 10px;
+    border-bottom:1px solid #e7edf5;
+    text-align:left;
+    vertical-align:middle;
+  }
+  thead th{
+    background:#f9fbff;
+    color:#476079;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+  }
+  .subhead{
+    font-size:12px;
+    text-transform:uppercase;
+    color:#6b7f95;
+    letter-spacing:.02em;
+    margin-bottom:10px;
+  }
+  .pill{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .pill-yes{background:var(--redbg);color:var(--red)}
+  .pill-no{background:var(--greenbg);color:var(--green)}
+  .pill-neutral{background:#eef4ff;color:#315ea8}
+  .kpi{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    background:#fff;
+  }
+  .kpi .name{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .kpi .val{font-size:26px;font-weight:700}
+  .kpi .small{font-size:13px;color:var(--muted)}
+  .status{
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid var(--line);
+  }
+  .ok{background:var(--greenbg);color:var(--green);border-color:#cfe9d7}
+  .warn{background:var(--redbg);color:var(--red);border-color:#f0c7c3}
+  .note{background:#f7fbff;color:#35516b}
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:12px;
+  }
+  .tiny{font-size:12px}
+  .right{text-align:right}
+  .center{text-align:center}
+  .mono{font-family:Consolas, Menlo, monospace}
+  .sticky-head thead th{
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+  .table-scroll{
+    max-height:540px;
+    overflow:auto;
+    border:1px solid var(--line);
+    border-radius:12px;
+  }
+  .footer{
+    margin-top:18px;
+    color:var(--muted);
+    font-size:13px;
+  }
+  @media (max-width:1080px){
+    .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" style="margin-bottom:18px">
+    <h1>Maestro Site Failover Calc Tool</h1>
+    <p class="muted">Local standalone calculator with a built-in scenario library. No VBA, no Excel macros, no installation. Author - Yury Butuzov (yurybu@checkpoint.com)</p>
+    <div class="status note">
+      This tool runs entirely in the browser. Scenarios are stored in your browser's local storage on this computer. You can export them to JSON or CSV at any time.
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Settings</h2>
+      <div class="controls">
+        <div class="field">
+          <label for="minGap">Minimum failover gap</label>
+          <input id="minGap" class="input-highlight" type="number" step="1" value="11">
+        </div>
+        <div class="field">
+          <label for="weightSGM">SGM weight</label>
+          <input id="weightSGM" class="input-highlight" type="number" step="1" value="6">
+        </div>
+        <div class="field">
+          <label for="weightStdPort">Standard Port weight</label>
+          <input id="weightStdPort" class="input-highlight" type="number" step="1" value="11">
+        </div>
+        <div class="field">
+          <label for="weightBond">Bond weight</label>
+          <input id="weightBond" class="input-highlight" type="number" step="1" value="11">
+        </div>
+        <div class="field">
+          <label for="weightOtherPort">Other Port weight</label>
+          <input id="weightOtherPort" class="input-highlight" type="number" step="1" value="6">
+        </div>
+        <div class="field">
+          <label for="weightSSM">SSM weight</label>
+          <input id="weightSSM" class="input-highlight" type="number" step="1" value="11">
+        </div>
+      </div>
+      <div class="footer">
+        Failover rule: standby must be better than the current active site by a value <strong>strictly greater</strong> than the minimum gap.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Scenario controls</h2>
+      <div class="controls">
+        <div class="field" style="min-width:320px">
+          <label for="scenarioSelect">Saved scenario</label>
+          <select id="scenarioSelect"></select>
+        </div>
+        <div class="field" style="min-width:320px">
+          <label for="scenarioName">Scenario name</label>
+          <input id="scenarioName" class="input-highlight" type="text" placeholder="Enter scenario name">
+        </div>
+        <div class="field">
+          <label for="currentActive">Current active site</label>
+          <select id="currentActive" class="input-highlight">
+            <option>Site 1</option>
+            <option>Site 2</option>
+          </select>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button id="btnLoad" class="secondary">Load Selected</button>
+        <button id="btnAdd">Add as New</button>
+        <button id="btnApply" class="light">Apply to Selected</button>
+        <button id="btnDelete" class="danger">Delete Selected</button>
+        <button id="btnClear" class="ghost">Clear Editor</button>
+      </div>
+      <div class="toolbar">
+        <button id="btnExportJson" class="ghost">Export JSON</button>
+        <button id="btnImportJson" class="ghost">Import JSON</button>
+        <button id="btnExportCsv" class="ghost">Export CSV</button>
+        <input id="fileImport" type="file" accept=".json" style="display:none">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Calculator</h2>
+    <div class="subhead">Yellow fields are editable</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2">Component</th>
+            <th rowspan="2" class="center">Weight</th>
+            <th colspan="3" class="center">Site 1</th>
+            <th colspan="3" class="center">Site 2</th>
+          </tr>
+          <tr>
+            <th class="center">Total</th>
+            <th class="center">UP</th>
+            <th class="center">Grade contribution</th>
+            <th class="center">Total</th>
+            <th class="center">UP</th>
+            <th class="center">Grade contribution</th>
+          </tr>
+        </thead>
+        <tbody id="calcTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid grid-4" style="margin-top:18px" id="kpis"></div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card">
+      <h2>Decision summary</h2>
+      <table>
+        <tbody>
+          <tr><td>Higher-grade Site</td><td id="higherGrade" class="right mono"></td></tr>
+          <tr><td>Absolute grade gap</td><td id="absoluteGap" class="right mono"></td></tr>
+          <tr><td>Standby advantage over active</td><td id="standbyAdvantage" class="right mono"></td></tr>
+          <tr><td>Failover?</td><td id="failoverAnswer" class="right"></td></tr>
+          <tr><td>Result active Site</td><td id="resultActive" class="right mono"></td></tr>
+          <tr><td>Result standby Site</td><td id="resultStandby" class="right mono"></td></tr>
+        </tbody>
+      </table>
+      <div id="commentBox" class="status note" style="margin-top:12px"></div>
+      <div id="validationBox" class="status ok" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>How to use</h2>
+      <ol>
+        <li>Set the component weights and the minimum failover gap.</li>
+        <li>Enter a scenario name and the current active Site.</li>
+        <li>Fill the component totals and UP values for both Site.</li>
+        <li>Use <strong>Add as New</strong> to create a saved scenario.</li>
+        <li>Later, choose a saved scenario and click <strong>Load Selected</strong>.</li>
+        <li>After changes, use <strong>Apply to Selected</strong> to update the saved scenario.</li>
+        <li>Use <strong>Export JSON</strong> for backup and <strong>Export CSV</strong> to open the scenario list in Excel.</li>
+      </ol>
+      <p class="tiny muted">This file contains no VBA and is not an Excel macro file. Whether your environment allows opening local HTML files is controlled by your browser and company policy.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Scenario library</h2>
+    <div class="table-scroll sticky-head">
+      <table id="scenarioTable">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Current Active</th>
+            <th>Ch1 Grade</th>
+            <th>Ch2 Grade</th>
+            <th>Higher Grade</th>
+            <th>Standby Advantage</th>
+            <th>Failover</th>
+            <th>Result Active</th>
+            <th>Comment</th>
+          </tr>
+        </thead>
+        <tbody id="scenarioTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const COMPONENTS = [
+  { key: "sgm", label: "SGM", weightId: "weightSGM" },
+  { key: "stdPort", label: "Standard Port", weightId: "weightStdPort" },
+  { key: "bond", label: "Bond", weightId: "weightBond" },
+  { key: "otherPort", label: "Other Port", weightId: "weightOtherPort" },
+  { key: "ssm", label: "SSM", weightId: "weightSSM" }
+];
+
+const STORAGE_KEY = "maestroFailoverTool_v1";
+
+const defaultScenarios = [
+  {
+    name: "Baseline (2x SGM, 4x bond)",
+    currentActive: "Site 1",
+    components: {
+      sgm: { ch1Total: 2, ch1Up: 2, ch2Total: 2, ch2Up: 2 },
+      stdPort: { ch1Total: 0, ch1Up: 0, ch2Total: 0, ch2Up: 0 },
+      bond: { ch1Total: 4, ch1Up: 4, ch2Total: 4, ch2Up: 4 },
+      otherPort: { ch1Total: 0, ch1Up: 0, ch2Total: 0, ch2Up: 0 },
+      ssm: { ch1Total: 2, ch1Up: 2, ch2Total: 2, ch2Up: 2 }
+    }
+  },
+  {
+    name: "2x SGM failed on Site 1 [2xSGM/4bond]",
+    currentActive: "Site 1",
+    components: {
+      sgm: { ch1Total: 2, ch1Up: 0, ch2Total: 2, ch2Up: 2 },
+      stdPort: { ch1Total: 0, ch1Up: 0, ch2Total: 0, ch2Up: 0 },
+      bond: { ch1Total: 4, ch1Up: 4, ch2Total: 4, ch2Up: 4 },
+      otherPort: { ch1Total: 0, ch1Up: 0, ch2Total: 0, ch2Up: 0 },
+      ssm: { ch1Total: 2, ch1Up: 2, ch2Total: 2, ch2Up: 2 }
+    }
+  },
+  {
+    name: "2x bond failed on Site 1 [2xSGM/4bond]",
+    currentActive: "Site 1",
+    components: {
+      sgm: { ch1Total: 2, ch1Up: 2, ch2Total: 2, ch2Up: 2 },
+      stdPort: { ch1Total: 0, ch1Up: 0, ch2Total: 0, ch2Up: 0 },
+      bond: { ch1Total: 4, ch1Up: 2, ch2Total: 4, ch2Up: 4 },
+      otherPort: { ch1Total: 0, ch1Up: 0, ch2Total: 0, ch2Up: 0 },
+      ssm: { ch1Total: 2, ch1Up: 2, ch2Total: 2, ch2Up: 2 }
+    }
+  }
+];
+
+function numberValue(id){
+  const v = Number(document.getElementById(id).value);
+  return Number.isFinite(v) ? v : 0;
+}
+
+function getWeights(){
+  return {
+    sgm: numberValue("weightSGM"),
+    stdPort: numberValue("weightStdPort"),
+    bond: numberValue("weightBond"),
+    otherPort: numberValue("weightOtherPort"),
+    ssm: numberValue("weightSSM")
+  };
+}
+
+function getMinimumGap(){
+  return numberValue("minGap");
+}
+
+function emptyComponents(){
+  const obj = {};
+  COMPONENTS.forEach(c => obj[c.key] = { ch1Total: 0, ch1Up: 0, ch2Total: 0, ch2Up: 0 });
+  return obj;
+}
+
+function buildCalcTable(){
+  const tbody = document.getElementById("calcTableBody");
+  tbody.innerHTML = "";
+  COMPONENTS.forEach((c, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${c.label}</td>
+      <td class="center mono" id="weightCell_${c.key}"></td>
+      <td><input class="input-highlight" type="number" min="0" step="1" id="${c.key}_ch1Total"></td>
+      <td><input class="input-highlight" type="number" min="0" step="1" id="${c.key}_ch1Up"></td>
+      <td class="right mono" id="${c.key}_ch1Contribution"></td>
+      <td><input class="input-highlight" type="number" min="0" step="1" id="${c.key}_ch2Total"></td>
+      <td><input class="input-highlight" type="number" min="0" step="1" id="${c.key}_ch2Up"></td>
+      <td class="right mono" id="${c.key}_ch2Contribution"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  document.querySelectorAll('input[type="number"], input[type="text"], select').forEach(el => {
+    el.addEventListener("input", recalc);
+    el.addEventListener("change", recalc);
+  });
+}
+
+function readEditorScenario(){
+  const components = emptyComponents();
+  COMPONENTS.forEach(c => {
+    components[c.key] = {
+      ch1Total: Number(document.getElementById(`${c.key}_ch1Total`).value || 0),
+      ch1Up: Number(document.getElementById(`${c.key}_ch1Up`).value || 0),
+      ch2Total: Number(document.getElementById(`${c.key}_ch2Total`).value || 0),
+      ch2Up: Number(document.getElementById(`${c.key}_ch2Up`).value || 0)
+    };
+  });
+  return {
+    name: document.getElementById("scenarioName").value.trim(),
+    currentActive: document.getElementById("currentActive").value,
+    components
+  };
+}
+
+function writeEditorScenario(s){
+  document.getElementById("scenarioName").value = s?.name || "";
+  document.getElementById("currentActive").value = s?.currentActive || "Site 1";
+  const components = s?.components || emptyComponents();
+  COMPONENTS.forEach(c => {
+    const data = components[c.key] || { ch1Total:0, ch1Up:0, ch2Total:0, ch2Up:0 };
+    document.getElementById(`${c.key}_ch1Total`).value = data.ch1Total ?? 0;
+    document.getElementById(`${c.key}_ch1Up`).value = data.ch1Up ?? 0;
+    document.getElementById(`${c.key}_ch2Total`).value = data.ch2Total ?? 0;
+    document.getElementById(`${c.key}_ch2Up`).value = data.ch2Up ?? 0;
+  });
+  recalc();
+}
+
+function calculateScenario(scenario){
+  const weights = getWeights();
+  let ch1Grade = 0, ch2Grade = 0;
+  let ch1Max = 0, ch2Max = 0;
+  let errors = [];
+
+  COMPONENTS.forEach(c => {
+    const d = scenario.components[c.key] || {};
+    const ch1Total = Number(d.ch1Total || 0);
+    const ch1Up = Number(d.ch1Up || 0);
+    const ch2Total = Number(d.ch2Total || 0);
+    const ch2Up = Number(d.ch2Up || 0);
+    if (ch1Up > ch1Total) errors.push(`${c.label}: Site 1 UP is greater than Total`);
+    if (ch2Up > ch2Total) errors.push(`${c.label}: Site 2 UP is greater than Total`);
+    if (ch1Total < 0 || ch1Up < 0 || ch2Total < 0 || ch2Up < 0) errors.push(`${c.label}: negative values are not allowed`);
+    const weight = Number(weights[c.key] || 0);
+    ch1Grade += ch1Up * weight;
+    ch2Grade += ch2Up * weight;
+    ch1Max += ch1Total * weight;
+    ch2Max += ch2Total * weight;
+  });
+
+  const higherGrade = ch1Grade === ch2Grade ? "Tie" : (ch1Grade > ch2Grade ? "Site 1" : "Site 2");
+  const absoluteGap = Math.abs(ch1Grade - ch2Grade);
+  const standbyAdvantage = scenario.currentActive === "Site 1" ? (ch2Grade - ch1Grade) : (ch1Grade - ch2Grade);
+  const failover = standbyAdvantage > getMinimumGap();
+  const resultActive = failover ? (scenario.currentActive === "Site 1" ? "Site 2" : "Site 1") : scenario.currentActive;
+  const resultStandby = resultActive === "Site 1" ? "Site 2" : "Site 1";
+
+  let comment = "";
+  if (errors.length) {
+    comment = "Check component counts. UP must not exceed Total.";
+  } else if (failover) {
+    comment = `Standby better than active by ${standbyAdvantage}, which is greater than the gap ${getMinimumGap()}.`;
+  } else if (higherGrade === "Tie") {
+    comment = "Grades are equal. No failover.";
+  } else if (standbyAdvantage > 0) {
+    comment = `Standby is better by ${standbyAdvantage}, but the minimum gap ${getMinimumGap()} is not exceeded.`;
+  } else {
+    comment = "Current active already has the higher grade.";
+  }
+
+  return {
+    ch1Grade, ch2Grade, ch1Max, ch2Max,
+    higherGrade, absoluteGap, standbyAdvantage,
+    failover, resultActive, resultStandby,
+    validationOk: errors.length === 0,
+    validationErrors: errors,
+    comment
+  };
+}
+
+function recalc(){
+  const weights = getWeights();
+  COMPONENTS.forEach(c => {
+    document.getElementById(`weightCell_${c.key}`).textContent = weights[c.key];
+  });
+
+  const scenario = readEditorScenario();
+  const result = calculateScenario(scenario);
+
+  COMPONENTS.forEach(c => {
+    const d = scenario.components[c.key];
+    const weight = weights[c.key];
+    document.getElementById(`${c.key}_ch1Contribution`).textContent = (Number(d.ch1Up || 0) * weight).toString();
+    document.getElementById(`${c.key}_ch2Contribution`).textContent = (Number(d.ch2Up || 0) * weight).toString();
+  });
+
+  const kpis = [
+    {name:"Site 1 grade", val:result.ch1Grade, small:`Max ${result.ch1Max}`},
+    {name:"Site 2 grade", val:result.ch2Grade, small:`Max ${result.ch2Max}`},
+    {name:"Site 1 reserve / max", val:formatRatio(result.ch1Grade, result.ch1Max), small:"Current / Maximum"},
+    {name:"Site 2 reserve / max", val:formatRatio(result.ch2Grade, result.ch2Max), small:"Current / Maximum"}
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(k => `
+    <div class="kpi">
+      <div class="name">${escapeHtml(k.name)}</div>
+      <div class="val">${escapeHtml(String(k.val))}</div>
+      <div class="small">${escapeHtml(k.small)}</div>
+    </div>`).join("");
+
+  document.getElementById("higherGrade").textContent = result.higherGrade;
+  document.getElementById("absoluteGap").textContent = String(result.absoluteGap);
+  document.getElementById("standbyAdvantage").textContent = String(result.standbyAdvantage);
+  document.getElementById("failoverAnswer").innerHTML = result.failover
+    ? '<span class="pill pill-yes">Yes</span>'
+    : '<span class="pill pill-no">No</span>';
+  document.getElementById("resultActive").textContent = result.resultActive;
+  document.getElementById("resultStandby").textContent = result.resultStandby;
+  document.getElementById("commentBox").textContent = result.comment;
+
+  const vb = document.getElementById("validationBox");
+  if (result.validationOk) {
+    vb.className = "status ok";
+    vb.textContent = "Validation status: OK";
+  } else {
+    vb.className = "status warn";
+    vb.innerHTML = "Validation status: " + result.validationErrors.map(escapeHtml).join("<br>");
+  }
+
+  renderScenarioTable();
+}
+
+function formatRatio(a, b){
+  if (!b) return "0.000";
+  return (a / b).toFixed(3);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  }catch(e){}
+  return { scenarios: defaultScenarios };
+}
+
+function saveState(state){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function getState(){
+  return loadState();
+}
+
+function setState(state){
+  saveState(state);
+  refreshScenarioSelect();
+  renderScenarioTable();
+}
+
+function refreshScenarioSelect(){
+  const state = getState();
+  const select = document.getElementById("scenarioSelect");
+  const current = select.value;
+  select.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = state.scenarios.length ? "Select a saved scenario" : "No saved scenarios";
+  select.appendChild(placeholder);
+  state.scenarios.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.name;
+    opt.textContent = s.name;
+    select.appendChild(opt);
+  });
+  if ([...select.options].some(o => o.value === current)) select.value = current;
+}
+
+function findScenario(name){
+  return getState().scenarios.find(s => s.name === name);
+}
+
+function handleLoadSelected(){
+  const name = document.getElementById("scenarioSelect").value;
+  if (!name) { alert("Select a saved scenario first."); return; }
+  const s = findScenario(name);
+  if (!s) { alert("Saved scenario not found."); return; }
+  writeEditorScenario(JSON.parse(JSON.stringify(s)));
+}
+
+function handleAddAsNew(){
+  const scenario = readEditorScenario();
+  if (!scenario.name) { alert("Enter a scenario name."); return; }
+  const state = getState();
+  if (state.scenarios.some(s => s.name === scenario.name)) {
+    alert("A scenario with this name already exists. Use Apply to Selected or choose another name.");
+    return;
+  }
+  state.scenarios.push(scenario);
+  setState(state);
+  document.getElementById("scenarioSelect").value = scenario.name;
+  renderScenarioTable();
+}
+
+function handleApplyToSelected(){
+  const selected = document.getElementById("scenarioSelect").value;
+  if (!selected) { alert("Select a saved scenario first."); return; }
+  const scenario = readEditorScenario();
+  if (!scenario.name) { alert("Scenario name cannot be empty."); return; }
+  const state = getState();
+  const idx = state.scenarios.findIndex(s => s.name === selected);
+  if (idx < 0) { alert("Saved scenario not found."); return; }
+  if (scenario.name !== selected && state.scenarios.some((s, i) => i !== idx && s.name === scenario.name)) {
+    alert("Another scenario already uses this name.");
+    return;
+  }
+  state.scenarios[idx] = scenario;
+  setState(state);
+  document.getElementById("scenarioSelect").value = scenario.name;
+  refreshScenarioSelect();
+  renderScenarioTable();
+}
+
+function handleDeleteSelected(){
+  const name = document.getElementById("scenarioSelect").value;
+  if (!name) { alert("Select a saved scenario first."); return; }
+  if (!confirm(`Delete scenario "${name}"?`)) return;
+  const state = getState();
+  state.scenarios = state.scenarios.filter(s => s.name !== name);
+  setState(state);
+  document.getElementById("scenarioSelect").value = "";
+  recalc();
+}
+
+function clearEditor(){
+  writeEditorScenario({name:"", currentActive:"Site 1", components:emptyComponents()});
+}
+
+function scenarioToFlatRow(s){
+  const res = calculateScenario(s);
+  return {
+    name: s.name,
+    currentActive: s.currentActive,
+    ch1Grade: res.ch1Grade,
+    ch2Grade: res.ch2Grade,
+    higherGrade: res.higherGrade,
+    standbyAdvantage: res.standbyAdvantage,
+    failover: res.failover ? "Yes" : "No",
+    resultActive: res.resultActive,
+    comment: res.comment
+  };
+}
+
+function renderScenarioTable(){
+  const state = getState();
+  const tbody = document.getElementById("scenarioTableBody");
+  tbody.innerHTML = "";
+  state.scenarios.forEach(s => {
+    const row = scenarioToFlatRow(s);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(row.name)}</td>
+      <td>${escapeHtml(row.currentActive)}</td>
+      <td class="right mono">${row.ch1Grade}</td>
+      <td class="right mono">${row.ch2Grade}</td>
+      <td>${escapeHtml(row.higherGrade)}</td>
+      <td class="right mono">${row.standbyAdvantage}</td>
+      <td>${row.failover === "Yes" ? '<span class="pill pill-yes">Yes</span>' : '<span class="pill pill-no">No</span>'}</td>
+      <td>${escapeHtml(row.resultActive)}</td>
+      <td>${escapeHtml(row.comment)}</td>
+    `;
+    tr.addEventListener("dblclick", () => {
+      document.getElementById("scenarioSelect").value = s.name;
+      handleLoadSelected();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function exportJson(){
+  const state = getState();
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  downloadBlob(blob, 'maestro_failover_scenarios.json');
+}
+
+function importJson(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !Array.isArray(parsed.scenarios)) throw new Error("Invalid JSON structure.");
+      setState(parsed);
+      alert("Scenario library imported.");
+    }catch(e){
+      alert("Import failed: " + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function exportCsv(){
+  const state = getState();
+  const headers = [
+    "Scenario","Current Active",
+    "SGM Ch1 Total","SGM Ch1 UP","SGM Ch2 Total","SGM Ch2 UP",
+    "Standard Port Ch1 Total","Standard Port Ch1 UP","Standard Port Ch2 Total","Standard Port Ch2 UP",
+    "Bond Ch1 Total","Bond Ch1 UP","Bond Ch2 Total","Bond Ch2 UP",
+    "Other Port Ch1 Total","Other Port Ch1 UP","Other Port Ch2 Total","Other Port Ch2 UP",
+    "SSM Ch1 Total","SSM Ch1 UP","SSM Ch2 Total","SSM Ch2 UP",
+    "Ch1 Grade","Ch2 Grade","Higher Grade","Standby Advantage","Failover","Result Active","Comment"
+  ];
+  const rows = state.scenarios.map(s => {
+    const r = calculateScenario(s);
+    return [
+      s.name, s.currentActive,
+      s.components.sgm.ch1Total, s.components.sgm.ch1Up, s.components.sgm.ch2Total, s.components.sgm.ch2Up,
+      s.components.stdPort.ch1Total, s.components.stdPort.ch1Up, s.components.stdPort.ch2Total, s.components.stdPort.ch2Up,
+      s.components.bond.ch1Total, s.components.bond.ch1Up, s.components.bond.ch2Total, s.components.bond.ch2Up,
+      s.components.otherPort.ch1Total, s.components.otherPort.ch1Up, s.components.otherPort.ch2Total, s.components.otherPort.ch2Up,
+      s.components.ssm.ch1Total, s.components.ssm.ch1Up, s.components.ssm.ch2Total, s.components.ssm.ch2Up,
+      r.ch1Grade, r.ch2Grade, r.higherGrade, r.standbyAdvantage, r.failover ? "Yes" : "No", r.resultActive, r.comment
+    ];
+  });
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(",")).join("\r\n");
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  downloadBlob(blob, 'maestro_failover_scenarios.csv');
+}
+
+function csvEscape(v){
+  const s = String(v ?? "");
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function initDefaultsIfEmpty(){
+  const existing = localStorage.getItem(STORAGE_KEY);
+  if (!existing) saveState({scenarios: defaultScenarios});
+}
+
+document.getElementById("btnLoad").addEventListener("click", handleLoadSelected);
+document.getElementById("btnAdd").addEventListener("click", handleAddAsNew);
+document.getElementById("btnApply").addEventListener("click", handleApplyToSelected);
+document.getElementById("btnDelete").addEventListener("click", handleDeleteSelected);
+document.getElementById("btnClear").addEventListener("click", clearEditor);
+document.getElementById("btnExportJson").addEventListener("click", exportJson);
+document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
+document.getElementById("btnImportJson").addEventListener("click", () => document.getElementById("fileImport").click());
+document.getElementById("fileImport").addEventListener("change", (e) => {
+  if (e.target.files && e.target.files[0]) importJson(e.target.files[0]);
+  e.target.value = "";
+});
+
+buildCalcTable();
+initDefaultsIfEmpty();
+refreshScenarioSelect();
+writeEditorScenario(findScenario("Baseline (2x SGM, 4x bond)") || {name:"", currentActive:"Site 1", components:emptyComponents()});
+recalc();
+</script>
+</body>
+</html>
