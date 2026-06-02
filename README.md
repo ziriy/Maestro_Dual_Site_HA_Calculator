@@ -34,14 +34,14 @@ In this configuration window you can manage the weights that is used by
 the tool. By default, the weights are complied with the Maestro default
 settings values.
 
-![](./media/image1.png){width="6.5in" height="3.3756944444444446in"}
+![](./media/image1.png)
 
 ## Scenario controls
 
 With this configuration window you can create your own scenarios, change
 or load existing and save the results to the external file.
 
-![](./media/image2.png){width="6.5in" height="3.8006944444444444in"}
+![](./media/image2.png)
 
 ## Calculator
 
@@ -51,14 +51,14 @@ in your scenario.
 You can set the number of components that you have for each site and the
 number of components that failed for specific scenario.
 
-![](./media/image3.png){width="6.5in" height="2.2527777777777778in"}
+![](./media/image3.png)
 
 ## Information windows
 
 On these windows you can see simple information and short description of
 how to use the tool.
 
-![](./media/image4.png){width="6.5in" height="2.68125in"}
+![](./media/image4.png)
 
 ## Scenario library
 
@@ -66,7 +66,7 @@ In this window you can understand how Maestro configuration will look in
 different component failure scenarios. You can just change the weights
 in the settings window, and every scenario will be recalculated.
 
-![](./media/image5.png){width="6.5in" height="2.578472222222222in"}
+![](./media/image5.png)
 
 # Use case example
 
@@ -84,7 +84,7 @@ ports with 2xSSM on each Site and 2 different failover scenarios.
 3)  In the Calculator window set the correct amount of each component
     for each site
 
-![](./media/image7.png){width="6.5in" height="2.126388888888889in"}
+![](./media/image7.png)
 
 4)  Save the Baseline scenario -- *Add as New*
 
@@ -97,12 +97,12 @@ and 1xSSM failed on the Site 1
 6)  Change the scenario name to (*1xSGM and 1xSSM failed - Baseline
     6xSGM 6xbonds 4xStandard ports 2xSSM)*
 
-![](./media/image8.png){width="6.5in" height="3.842361111111111in"}
+![](./media/image8.png)
 
 7)  Change the number of components that is in the UP state in the
     Calculator window
 
-![](./media/image9.png){width="6.5in" height="2.1173611111111112in"}
+![](./media/image9.png)
 
 8)  Save the scenario -- (*Add as New*)
 
@@ -110,13 +110,13 @@ and 1xSSM failed on the Site 1
     2xSGM 1xbond 1xSSM on Site1 and 1xSGM 1Standard port on Site 2
     failed
 
-![](./media/image10.png){width="6.5in" height="2.157638888888889in"}
+![](./media/image10.png)
 
 10) Now you have the scenario set and can play with the weights
 
-![](./media/image11.png){width="6.5in" height="2.8944444444444444in"}
+![](./media/image11.png)
 
 11) For example, if I change the weight of bond from 11 to 4 my
     scenarios will look like this
 
-![](./media/image12.png){width="6.5in" height="2.8847222222222224in"}
+![](./media/image12.png)
